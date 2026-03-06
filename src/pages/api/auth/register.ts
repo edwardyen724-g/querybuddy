@@ -1,0 +1,36 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { createClient } from '@supabase/supabase-js';
+
+interface AuthedRequest extends NextApiRequest {
+  body: {
+    email: string;
+    password: string;
+  };
+}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+export default async function register(req: AuthedRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { email, password } = req.body;
+
+  try {
+    const { user, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      return res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+
+    return res.status(201).json({ user });
+  } catch (err) {
+    return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+}
